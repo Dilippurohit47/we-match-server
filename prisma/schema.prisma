@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?   // Nullable for social login
+  
+  // Basic Info
+  fullName      String
+  age           Int
+  gender        String?
+  profilePic    String    @default("")
+  bio           String?
+  oneLiner      String
+  profession    String
+  
+  // Location
+  lat           Float?
+  long          Float?
+  city          String
+  country       String?
+  landmark      String?
+  
+  // Contact & Social
+  portfolio     String?
+  
+  // Verification
+  emailVerified Boolean   @default(false)
+  phoneVerified Boolean   @default(false)
+  
+  // Social Logins
+  googleId      String?   @unique
+  
+  // Activity
+  lastActive    DateTime  @default(now())
+  profileCompletion Int   @default(0)
+  totalMatches  Int       @default(0)
+  
+  // RELATIONS
+  skills        Skill[]   // One user has many skills
+  subjects      Subject[] // One user has many subjects
+  matchPreference MatchPreference? // One-to-one
+
+
+  matchesAsUser1 Match[] @relation("User1Matches")
+  matchesAsUser2 Match[] @relation("User2Matches") 
+  swipesMade     Swipe[] @relation("UserSwipes")
+  swipesReceived Swipe[] @relation("UserTargets")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  
+  @@index([lat, long])
+  @@index([city])
+  @@index([profession])
+  @@index([lastActive])
+}
+
+model Skill {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())  
+  @@unique([userId, name])
+  @@index([name])
+  @@index([userId])
+}
+
+model Subject {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())  
+  @@unique([userId, name])
+  @@index([name])
+}
+
+model MatchPreference {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  lookingFor       String[]  // ["study partner", "project collaborator", "mentor"]
+  meetupPreference String    @default("both") // "virtual", "in-person", "both"
+  
+  // Availability (simple approach)
+  availableDays    String[]  @default(["weekends"])
+  availableTimes   String[]  @default(["evening"])
+  
+  // Preferences
+  maxDistance      Int       @default(10) // km
+  minAge           Int       @default(18)
+  maxAge           Int       @default(40)
+  preferredProfessions String[]
+  
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  updatedAt        DateTime  @updatedAt
+}
+
+// For tracking matches between users
+model Match {
+  id          String    @id @default(cuid())
+  
+  // Two users in a match
+  user1Id     String
+  user2Id     String
+  
+  // Match status
+  status      String    @default("matched") // "matched", "blocked", "unmatched"
+  matchedAt   DateTime  @default(now())
+  
+  // Chat & interaction
+  lastMessage DateTime?
+  unreadCount Int       @default(0)
+  
+  // Relations
+  user1       User      @relation("User1Matches", fields: [user1Id], references: [id])
+  user2       User      @relation("User2Matches", fields: [user2Id], references: [id])
+  
+  // Ensure unique pair (ordered)
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([matchedAt])
+}
+
+// For tracking swipes (right/left/super)
+model Swipe {
+  id          String    @id @default(cuid())
+  swiperId    String    // Who swiped
+  targetId    String    // Who got swiped on
+  direction   String    // "right", "left", "up" (super like)
+  
+  swipedAt    DateTime  @default(now())
+  
+  // Relations
+  swiper      User      @relation("UserSwipes", fields: [swiperId], references: [id], onDelete: Cascade)
+  target      User      @relation("UserTargets", fields: [targetId], references: [id], onDelete: Cascade)
+  
+  @@unique([swiperId, targetId]) // Can't swipe same person twice
+  @@index([swiperId, swipedAt])
+  @@index([targetId])
+}
