@@ -7,17 +7,16 @@ import  bcrypt from "bcrypt"
 import JWT from "jsonwebtoken"
 const router  = express.Router()
 
-
-
 router.post("/sign-up",async(req:Request,res:Response) =>{
   try {
 const userBody = req.body    
+
 const result = UserSignupSchema.safeParse(userBody);
 if (!result.success) {
  let {field , message } = formatZodError(result.error)
  sendErrorResponse(res,404,`${field}:${message}`)
  return
-}
+} 
 const userData = result.data
 if(!userData) return 
 const hasedhPassword  =  await bcrypt.hash(userData.password , 10)
@@ -31,6 +30,8 @@ const user = await prisma.user.create({
     city:userData.city,
     landmark:userData.landmark,
     portfolio:userData.portfolio,
+    lat:userData.latitude,
+    long:userData.longitude,
     skills:{
       create:userData.skills.map((skill)=>{
         return {name:skill}
@@ -53,6 +54,7 @@ const user = await prisma.user.create({
 if(user){
 let token = sendJwtToken(res,user.id)
 }
+console.log(user)
 return res.status(200).json({
   success:true,
   message:"Sign up successfully"
@@ -63,10 +65,9 @@ return res.status(200).json({
   }
 })
 
-// cmjfw7pgw0000g8upiri849gl
 router.get("/me",async(req:Request,res:Response) =>{
   try {
-    const token = req.cookies["wematch-token"];
+    const token = req.cookies["accessToken"];
     if(!process.env.JWT_SECRET_KEY){
       console.log("error jwt secret is required in route me")
       sendErrorResponse(res,500,"temporary error try again later")
@@ -80,7 +81,6 @@ router.get("/me",async(req:Request,res:Response) =>{
       }
     })
 
-    console.log("user",user)
     if(!user){
       sendErrorResponse(res,500,"something went wrong")
       return

@@ -28,7 +28,6 @@ export const UserSignupSchema = z.object({
   skills: z
     .string()
     .transform((val) => val.split(" ").filter(Boolean)),
-  // "react backend nodejs" → ["react", "backend", "nodejs"]
 
   subjects: z
     .string()
@@ -43,6 +42,8 @@ export const UserSignupSchema = z.object({
   minAge: z.number().min(18),
 
   maxAge: z.number().max(100),
+  latitude:z.number(),
+  longitude:z.number(),
 });
 
 export const UserSignInSchema = z.object({
