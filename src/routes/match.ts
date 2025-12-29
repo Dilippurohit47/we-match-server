@@ -130,7 +130,6 @@ app.get("/get-matches",authMiddleware ,async(req:Request,res:Response) =>{
             },
             }
         })
-        console.log(matches)
         const otherUsers = matches.map((users) =>{
             return users.user1.id === req.user.id ? {...users.user2  ,matchedAt:users.matchedAt} : {...users.user1 ,matchedAt:users.matchedAt}
         }) 

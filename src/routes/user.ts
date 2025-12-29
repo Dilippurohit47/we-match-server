@@ -30,7 +30,6 @@ app.get("/get-nearby-users",async(req:Request,res:Response)=>{
 const RADIUS_KM = 100;
 const lat = Number(user.lat);
 const lon = Number(user.long);
-console.log(lat,lon)
 if(!lat && !lon){
   return
 }
@@ -79,6 +78,40 @@ return res.status(200).json({
     }
 })
 
+app.get("/get-single-user/:id",async(req:Request,res:Response)=>{
+  try {
+    const id = req.params.id
+     const user = await prisma.user.findUnique({
+      where:{
+        id:id
+      },include:{
+        skills:{
+          select:{
+            name:true,
+          }
+        },
+        subjects:{
+          select:{
+            name:true,
+          }
+        },
+      }
+     })
+     if(!user){
+      res.status(404).json({
+        message:"User doesnt exit or deleted.",
+      })
+      return
+     }
+     
+     res.status(200).json({
+      message:"User profile fetched",
+      user:user
+     })
+  } catch (error) {
+    sendErrorResponse(res,500,"Internal server error ")
+  }
+})
 export default app
 
 

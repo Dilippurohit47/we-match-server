@@ -56,6 +56,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
+  sentChats Chat[] @relation("user1")
+  receivedChats Chat[] @relation("user2")
+  sentMessages Messages[] @relation("SentMessages")  
+  receivedMessages Messages[] @relation("ReceivedMessages") 
+    deletedMessage DeletedMessage[]
+  deletedChat DeletedChat[] 
   
   @@index([lat, long])
   @@index([city])
@@ -148,4 +154,51 @@ model Swipe {
   @@unique([swiperId, targetId]) // Can't swipe same person twice
   @@index([swiperId, swipedAt])
   @@index([targetId])
+}
+
+model Chat {
+id String @id @default(uuid())
+senderId String
+receiverId String 
+lastMessage String
+lastMessageCreatedAt DateTime @default(now())
+unreadCount Json?
+user1 User @relation(name:"user1",fields: [senderId],references: [id])
+user2 User @relation(name:"user2",fields: [receiverId],references: [id])
+message Messages[]
+  deleteBy DeletedChat[]
+}
+
+model Messages { 
+  id String @id @default(uuid())
+  content String
+  createdAt DateTime @default(now())
+  senderId String
+  receiverId String
+  sender User @relation("SentMessages",fields: [senderId],references: [id])
+  receiver User @relation("ReceivedMessages",fields: [receiverId],references: [id])
+  chatId String
+  chat Chat @relation(fields: [chatId],references: [id])
+  deletedBy DeletedMessage[]
+  isMedia Boolean @default(false)
+}
+
+
+model DeletedChat {
+  id String @id @default(uuid())
+  userId String
+  chatId String
+  user User @relation(fields: [userId],references: [id])
+  chat Chat @relation(fields: [chatId],references: [id])
+}
+
+model DeletedMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  messageId String
+
+  user      User     @relation(fields: [userId], references: [id])
+  message   Messages  @relation(fields: [messageId], references: [id])
+
+  @@unique([userId, messageId])
 }
