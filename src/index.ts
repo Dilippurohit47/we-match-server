@@ -7,8 +7,8 @@ import UserMatchedRoutes from "./routes/match"
 import ChatRoutes from "./routes/Chat"
 import cors from "cors"
 import cookieParser from "cookie-parser";
-import { WebSocketServer } from "ws"
-import prisma from "./helper/prisma"
+import MessageRoutes from "./routes/messages"
+import "./events/sendRecentChats.listener"
 import { setupWebSocket } from "./websockets"
 dotenv.config()
 const app = express()
@@ -30,6 +30,7 @@ app.use("/api/v1/auth/",Auth)
 app.use("/api/v1/user/",UserRoutes)
 app.use("/api/v1/match/",UserMatchedRoutes)
 app.use("/api/v1/chat/",ChatRoutes)
+app.use("/api/v1/message/",MessageRoutes)
 server.listen((PORT),()=>{  
     console.log(`server is listening on ${PORT}`)
 })

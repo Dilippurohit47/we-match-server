@@ -160,4 +160,76 @@ await prisma.messages.create({
   }
 };
 
+export const updateUnreadMessageCount = async(chatId:string , idForUpdate:string)=>{
+     let chat ;
+    if(chatId){
+chat = await prisma.chat.findUnique({
+      where: {
+        id: chatId,
+      },  
+    });
+  } 
+    if(!chat){
+      console.log("no chat found for unread count update")
+      return 
+    }
+
+    const unreadCount = chat?.unreadCount as {userId:string} | null
+    if ( unreadCount && unreadCount.userId === idForUpdate) {
+      await prisma.chat.update({
+        where: {
+          id: chatId || chat.id,
+        },
+        data: {
+          unreadCount: {
+            userId: null,
+            unreadMessages: 0,
+          },
+        },
+      });
+    }
+    return
+
+}
+
+
+
+export const sendRecentChats = async (userId: string) => {
+  try {  
+    if (!userId) { 
+      return;
+    }
+    const chats = await prisma.chat.findMany({
+  where: {
+  OR: [{ senderId: userId }, { receiverId: userId }],
+  deleteBy: {
+    none: { userId },
+  },
+},
+      orderBy: {
+        lastMessageCreatedAt: "desc",
+      },
+      include: {
+        user1: true,
+        user2: true,
+      },
+    });
+    const formattedChats = chats.map((chat) => {
+      const otherUser = chat.user1.id === userId ? chat.user2 : chat.user1;
+      return {
+        chatId: chat.id,
+        lastMessage: chat.lastMessage,
+        senderId:chat.senderId,
+        receiverId:chat.receiverId,
+        lastMessageCreatedAt: chat.lastMessageCreatedAt,
+        unreadCount: chat.unreadCount,
+        ...otherUser,
+      };
+    });
+    return formattedChats;
+  } catch (error) {
+    console.log("error in send recent chats ",error);
+  }
+};
+
 export default app
